@@ -38,7 +38,9 @@ if st.button("🔍 ابحث عن السيارة المناسبة", use_container
 
                 response.raise_for_status()
 
-                data = response.json()
+             
+            data = response.json()
+            st.json(data)
 
                 # في حال كان رد n8n داخل output
                 if isinstance(data, dict) and "output" in data:
