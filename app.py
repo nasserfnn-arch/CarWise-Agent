@@ -37,7 +37,12 @@ if st.button("🔍 ابحث عن السيارة المناسبة", use_container
                 )
 
                 response.raise_for_status()
+
                 data = response.json()
+
+                # في حال كان رد n8n داخل output
+                if isinstance(data, dict) and "output" in data:
+                    data = data["output"]
 
                 status = data.get("status", "")
                 question_type = data.get("question_type", "")
@@ -45,23 +50,42 @@ if st.button("🔍 ابحث عن السيارة المناسبة", use_container
                 summary = data.get("summary", "")
                 cars = data.get("cars", [])
 
+                # -------------------------
                 # سؤال خارج النطاق
+                # -------------------------
                 if question_type == "out_of_scope":
-                    st.error("🚫 السؤال خارج نطاق CarWise")
-                    if message:
-                        st.write(message)
 
-                # سؤال غامض
-                elif question_type == "ambiguous":
-                    st.warning("❓ أحتاج منك معلومات أكثر")
+                    st.error("🚫 السؤال خارج نطاق CarWise")
+
                     if message:
                         st.write(message)
 
                     if summary:
                         st.caption(summary)
 
-                # سؤال عادي أو يحتاج أداة أو معقد
-                elif question_type in ["normal", "tool_required", "complex"]:
+                # -------------------------
+                # سؤال غامض
+                # -------------------------
+                elif question_type == "ambiguous":
+
+                    st.warning("❓ أحتاج منك معلومات أكثر")
+
+                    if message:
+                        st.write(message)
+
+                    if summary:
+                        st.caption(summary)
+
+                # -------------------------
+                # سؤال عادي
+                # سؤال يحتاج أداة
+                # سؤال معقد
+                # -------------------------
+                elif question_type in [
+                    "normal",
+                    "tool_required",
+                    "complex"
+                ]:
 
                     st.success("🚗 تم تحليل طلبك بنجاح")
 
@@ -72,9 +96,11 @@ if st.button("🔍 ابحث عن السيارة المناسبة", use_container
                         st.info(summary)
 
                     if cars:
+
                         st.markdown("### أفضل الخيارات")
 
                         for car in cars:
+
                             brand = car.get("brand", "")
                             model = car.get("model", "")
                             price = car.get("price", "")
@@ -86,40 +112,100 @@ if st.button("🔍 ابحث عن السيارة المناسبة", use_container
                             reason = car.get("reason", "")
 
                             with st.container(border=True):
-                                st.markdown(f"### 🚘 {brand} {model}")
+
+                                st.markdown(
+                                    f"### 🚘 {brand} {model}"
+                                )
 
                                 col1, col2 = st.columns(2)
 
                                 with col1:
-                                    if isinstance(price, (int, float)):
-                                        st.write(f"💰 **السعر:** {price:,} ريال")
-                                    else:
-                                        st.write(f"💰 **السعر:** {price}")
 
-                                    st.write(f"🚙 **الفئة:** {category}")
-                                    st.write(f"🎨 **اللون:** {color}")
+                                    if isinstance(
+                                        price,
+                                        (int, float)
+                                    ):
+                                        st.write(
+                                            f"💰 **السعر:** "
+                                            f"{price:,} ريال"
+                                        )
+                                    else:
+                                        st.write(
+                                            f"💰 **السعر:** "
+                                            f"{price}"
+                                        )
+
+                                    st.write(
+                                        f"🚙 **الفئة:** "
+                                        f"{category}"
+                                    )
+
+                                    st.write(
+                                        f"🎨 **اللون:** "
+                                        f"{color}"
+                                    )
 
                                 with col2:
-                                    st.write(f"👥 **المقاعد:** {seats}")
-                                    st.write(f"⛽ **الوقود:** {fuel_type}")
-                                    st.write(f"📊 **الاستهلاك:** {fuel_economy}")
 
-                                st.markdown("**ليش نرشحها لك؟**")
+                                    st.write(
+                                        f"👥 **المقاعد:** "
+                                        f"{seats}"
+                                    )
+
+                                    st.write(
+                                        f"⛽ **الوقود:** "
+                                        f"{fuel_type}"
+                                    )
+
+                                    st.write(
+                                        f"📊 **الاستهلاك:** "
+                                        f"{fuel_economy}"
+                                    )
+
+                                st.markdown(
+                                    "**ليش نرشحها لك؟**"
+                                )
+
                                 st.write(reason)
 
                     else:
-                        st.warning("ما لقيت سيارات مناسبة في قاعدة البيانات.")
+                        st.warning(
+                            "ما لقيت سيارات مناسبة "
+                            "في قاعدة البيانات."
+                        )
 
-                # أي حالة غير متوقعة
+                # -------------------------
+                # حالة غير متوقعة
+                # -------------------------
                 else:
+
+                    st.warning(
+                        "ما قدرت أحدد نوع الطلب "
+                        "بشكل واضح."
+                    )
+
                     if message:
-                        st.info(message)
-                    else:
-                        st.warning("ما قدرت أحدد نوع الطلب بشكل واضح.")
+                        st.write(message)
 
             except requests.exceptions.Timeout:
-                st.error("استغرق CarWise وقت أطول من المتوقع. حاول مرة ثانية.")
+
+                st.error(
+                    "استغرق CarWise وقت أطول "
+                    "من المتوقع. حاول مرة ثانية."
+                )
+
+            except requests.exceptions.RequestException as e:
+
+                st.error(
+                    "حدث خطأ أثناء الاتصال بـ CarWise."
+                )
+
+                st.caption(str(e))
 
             except Exception as e:
-                st.error("حدث خطأ أثناء الاتصال بـ CarWise.")
+
+                st.error(
+                    "حدث خطأ غير متوقع."
+                )
+
                 st.caption(str(e))
